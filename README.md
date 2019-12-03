@@ -1,2 +1,2 @@
 # Advent of Code 2019
-Christmas coding exercices
+Advent of Code 2019 solutions in Go and Python
