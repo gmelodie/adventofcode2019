@@ -1,54 +1,68 @@
 import sys
+import copy
+import numpy as np
 
 
-def update_velocity(i, moons, velocities):
-    for j in range(len(moons)):
-        if j == i:
-            continue
-        for coords in range(3):
-            if moons[i][coords] < moons[j][coords]:
-                velocities[i][coords] += 1
-            elif moons[i][coords] > moons[j][coords]:
-                velocities[i][coords] -= 1
+def update_velocities(moons, velocities):
+    for i in range(len(moons)):
+        for j in range(len(moons)):
+            if j == i:
+                continue
+            if moons[i] < moons[j]:
+                velocities[i] += 1
+            elif moons[i] > moons[j]:
+                velocities[i] -= 1
 
 
-def update_position(i, moons, velocities):
-    moons[i][0] += velocities[i][0]
-    moons[i][1] += velocities[i][1]
-    moons[i][2] += velocities[i][2]
+def update_positions(moons, velocities):
+    for i in range(len(moons)):
+        moons[i] += velocities[i]
 
 
-def potential_energy(moon):
-    return abs(moon[0]) + abs(moon[1]) + abs(moon[2])
+def back_to_beginning(orig_moons, orig_velocities, velocities, moons):
+    for i in range(len(moons)):
+        if orig_moons[i] != moons[i] or orig_velocities[i] != velocities[i]:
+            return False
+    return True
 
 
-def kinetic_energy(velocity):
-    return abs(velocity[0]) + abs(velocity[1]) + abs(velocity[2])
+def simulate_axis(moons, axis):
+    new_moons = []
+    new_velocities = []
+    for moon in moons:
+        new_moons.append(moon[axis])
+        new_velocities.append(0)
+
+    orig_moons = copy.deepcopy(new_moons)
+    orig_velocities = copy.deepcopy(new_velocities)
+
+    nsteps = 0
+    while True:
+        nsteps += 1
+
+        update_velocities(new_moons, new_velocities)
+        update_positions(new_moons, new_velocities)
+
+        if back_to_beginning(orig_moons, orig_velocities, \
+                             new_velocities, new_moons):
+            break
+
+    return nsteps
 
 
 if __name__ == "__main__":
-    nsteps = 1000
-
     moons = []
-    velocities = []
     for line in sys.stdin:
         moons.append([int(a) for a in line.strip().split()])
-        velocities.append([0,0,0])
 
-    for step in range(nsteps):
-        print("STEP", step)
-        for i in range(len(moons)):
-            update_velocity(i, moons, velocities)
-        for i in range(len(moons)):
-            update_position(i, moons, velocities)
-            print(moons[i], velocities[i])
+    least_x = simulate_axis(moons, 0)
+    least_y = simulate_axis(moons, 1)
+    least_z = simulate_axis(moons, 2)
 
-    total_energy = 0
-    for i in range(len(moons)):
-        pot = potential_energy(moons[i])
-        kin = kinetic_energy(velocities[i])
-        print(pot, kin)
-        total_energy += (pot * kin)
 
-    print(total_energy)
+    print(least_x)
+    print(least_y)
+    print(least_z)
+    repeat = np.lcm.reduce([least_x, least_y, least_z])
+    print("Took", repeat, "steps to get back at the beginning")
 
