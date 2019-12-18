@@ -8,7 +8,6 @@ if __name__ == "__main__":
     offset = int(raw_signal[:7], 10)
 
     signal = signal * 10000
-    signal = signal[7:]
 
     nphases = 100
     for phase in range(nphases):
@@ -20,7 +19,7 @@ if __name__ == "__main__":
         for i in range(offset, len(signal)):
             t = partial_sum
             partial_sum -= signal[i]
-            signal[i] = int(abs(partial_sum)) % 10
+            signal[i] = int(abs(t)) % 10
 
         print(signal[offset:offset+8])
 
