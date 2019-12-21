@@ -6,37 +6,55 @@ import numpy as np
 
 
 directions = [(1,0), (0, 1), (-1, 0), (0, -1)]
+left = {
+    (1,0): (0, 1),
+    (-1,0): (0, -1),
+    (0,1): (-1, 0),
+    (0,-1): (1, 0),
+}
+
+right = {
+    (1,0): (0, -1),
+    (-1,0): (0, 1),
+    (0,1): (1, 0),
+    (0,-1): (-1, 0),
+}
+
 cache = {}
 
 
 def find_reachable_keys(maze, pos, havekeys):
     keys = {}
     bfs = collections.deque([pos])
-    distance = {pos: 0}
+    distance = {}
+    for p in pos:
+        distance[p] = 0
 
     while bfs:
         pos = bfs.popleft()
         for d in directions:
-            auxpos = (pos[0] + d[0], pos[1] + d[1])
+            aux4pos = [(p[0] + d[0], p[1] + d[1]) for p in pos]
+            for i, auxpos in enumerate(aux4pos):
+                newpos = pos.copy()
+                newpos[i] = auxpos
+                # Out of bounds
+                if not (0 <= auxpos[0] < maze.shape[0] and \
+                        0 <= auxpos[1] < maze.shape[1]):
+                    continue
 
-            # Out of bounds
-            if not (0 <= auxpos[0] < maze.shape[0] and \
-                    0 <= auxpos[1] < maze.shape[1]):
-                continue
+                ch = maze[auxpos[0]][auxpos[1]]
+                if ch == '#':
+                    continue
+                if auxpos in distance:
+                    continue
 
-            ch = maze[auxpos[0]][auxpos[1]]
-            if ch == '#':
-                continue
-            if auxpos in distance:
-                continue
-
-            distance[auxpos] = distance[pos] + 1
-            if 'A' <= ch <= 'Z' and ch.lower() not in havekeys:
-                continue
-            if 'a' <= ch <= 'z' and ch not in havekeys:
-                keys[ch] = distance[auxpos], auxpos
-            else:
-                bfs.append(auxpos)
+                distance[auxpos] = distance[pos[i]] + 1
+                if 'A' <= ch <= 'Z' and ch.lower() not in havekeys:
+                    continue
+                if 'a' <= ch <= 'z' and ch not in havekeys:
+                    keys[ch] = distance[auxpos], newpos
+                else:
+                    bfs.append(newpos)
 
     return keys
 
@@ -44,8 +62,9 @@ def find_reachable_keys(maze, pos, havekeys):
 def minwalk(maze, pos, havekeys):
     # Search in cache
     hks = ''.join(sorted(havekeys))
-    if (pos, hks) in cache:
-        return cache[pos, hks]
+    pos1, pos2, pos3, pos4 = pos
+    if (pos1, pos2, pos3, pos4, hks) in cache:
+        return cache[pos1, pos2, pos3, pos4, hks]
 
     # Find reachable keys
     # keys[keyname] = (distance, position)
@@ -57,12 +76,12 @@ def minwalk(maze, pos, havekeys):
         return 0
 
     moves = []
-    for ch, (dist, auxpos) in keys.items():
+    for ch, (dist, newpos) in keys.items():
         heapq.heappush(moves, \
-                       (dist + minwalk(maze, auxpos, \
+                       (dist + minwalk(maze, newpos, \
                                        havekeys + ch)))
     ans = heapq.heappop(moves)
-    cache[pos, hks] = ans
+    cache[pos1, pos2, pos3, pos4, hks] = ans
     return ans
 
 
@@ -74,17 +93,14 @@ if __name__ == "__main__":
         maze.append(list(line.strip()))
     maze = np.array(maze)
 
-    # Find starting pos and doors
-    startpos = (-1, -1)
+    # Find starting pos
+    startpos = []
     for i in range(maze.shape[0]):
-        if startpos != (-1, -1):
-            break
         for j in range(maze.shape[1]):
             if maze[i][j] == '@':
-                startpos = (i, j)
-                break
+                startpos.append((i, j))
 
-    if startpos == (-1, -1):
+    if len(startpos) == 0:
         print("Couldn't find starting position '@'")
         exit(1)
 
