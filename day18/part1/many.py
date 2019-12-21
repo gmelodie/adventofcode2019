@@ -1,16 +1,69 @@
 import sys
+import copy
+import collections
 import heapq
 import numpy as np
 
 
-def find_possible_moves(cost, maze, pos, doors):
-    moves = []
+directions = [(1,0), (0, 1), (-1, 0), (0, -1)]
+cache = {}
+
+
+def find_reachable_keys(maze, pos, havekeys):
+    keys = {}
+    bfs = collections.deque([pos])
+    distance = {pos: 0}
+
+    while bfs:
+        pos = bfs.popleft()
+        for d in directions:
+            auxpos = (pos[0] + d[0], pos[1] + d[1])
+
+            # Out of bounds
+            if not (0 <= auxpos[0] < maze.shape[0] and \
+                    0 <= auxpos[1] < maze.shape[1]):
+                continue
+
+            ch = maze[auxpos[0]][auxpos[1]]
+            if ch == '#':
+                continue
+            if auxpos in distance:
+                continue
+
+            distance[auxpos] = distance[pos] + 1
+            if 'A' <= ch <= 'Z' and ch.lower() not in havekeys:
+                continue
+            if 'a' <= ch <= 'z' and ch not in havekeys:
+                keys[ch] = distance[auxpos], auxpos
+            else:
+                bfs.append(auxpos)
+
+    return keys
+
+
+def minwalk(maze, pos, havekeys):
+    # Search in cache
+    hks = ''.join(sorted(havekeys))
+    if (pos, hks) in cache:
+        return cache[pos, hks]
+
     # Find reachable keys
-    # Alter maze (remove key and respective door)
-    # Update pos (now it is the last removed key's)
-    # Update cost
-    # Append tuple to moves
-    return moves
+    # keys[keyname] = (distance, position)
+    keys = find_reachable_keys(maze, pos, havekeys)
+    if len(cache) % 10 == 0:
+        print("hks:", hks, len(hks))
+
+    if len(keys) == 0:
+        return 0
+
+    moves = []
+    for ch, (dist, auxpos) in keys.items():
+        heapq.heappush(moves, \
+                       (dist + minwalk(maze, auxpos, \
+                                       havekeys + ch)))
+    ans = heapq.heappop(moves)
+    cache[pos, hks] = ans
+    return ans
 
 
 if __name__ == "__main__":
@@ -23,48 +76,18 @@ if __name__ == "__main__":
 
     # Find starting pos and doors
     startpos = (-1, -1)
-    door_pos = {}
-    ndoors = 0
     for i in range(maze.shape[0]):
+        if startpos != (-1, -1):
+            break
         for j in range(maze.shape[1]):
             if maze[i][j] == '@':
                 startpos = (i, j)
-            elif maze[i][j] != '#' and maze[i][j] != '.' and \
-                maze[i][j] >= 'A' and maze[i][j] <= 'Z':
-                ndoors += 1
-                door = maze[i][j]
-                door_pos[door] = (i, j)
+                break
 
     if startpos == (-1, -1):
         print("Couldn't find starting position '@'")
         exit(1)
 
-    # if not doors:
-    if ndoors <= 0:
-        print("Didn't find any doors")
-        exit(2)
-
     print("Startpos:", startpos)
-    print("Doors:", door_pos)
-    print("Ndoors:", ndoors)
 
-    # Find best (shortest) path
-    pos = startpos
-    doors = 0
-    cost = 0
-    possibilities = []
-    while doors < ndoors:
-        # Find next possible moves
-        # List of (cost, maze, pos, ndoors)
-        moves = find_possible_moves(cost, maze.copy(), pos, doors)
-
-        for move in moves:
-
-            # Insert (cost, maze, pos, doors) in heap
-            heapq.heappush(possibilities, move)
-
-        # Get (cost, maze, pos, doors) from heap
-        cost, maze, pos, doors = heapq.heappop(possibilities)
-
-    # Print shortest path cost (length)
-    print(cost)
+    print(minwalk(maze, startpos, ''))
