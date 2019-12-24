@@ -1,7 +1,6 @@
 import sys
+import numpy as np
 import intcode
-
-
 
 
 if __name__ == "__main__":
@@ -10,4 +9,20 @@ if __name__ == "__main__":
         exit(1)
 
     instructions = intcode.load_instructions(sys.argv[1])
-    print(instructions)
+
+
+    output = []
+    for i in range(50):
+        if i%10 == 0:
+            print(i)
+        for j in range(50):
+            idx, rboffset = intcode.execute(instructions.copy(), \
+                                            inputdata=[i, j])
+            output.append(intcode.RETVAL)
+
+
+
+    output = np.array(output)
+    print(output)
+    print(output[output == 1])
+    print(len(output[output == 1]))
