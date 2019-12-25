@@ -13,12 +13,12 @@ if __name__ == "__main__":
 
     output = []
     for i in range(50):
-        if i%10 == 0:
-            print(i)
         for j in range(50):
             idx, rboffset = intcode.execute(instructions.copy(), \
                                             inputdata=[i, j])
             output.append(intcode.RETVAL)
+            print(intcode.RETVAL, end='')
+        print()
 
 
 
