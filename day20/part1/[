@@ -9,10 +9,4 @@ if __name__ == "__main__":
     maze = np.array(maze)
     print(maze)
 
-    startpos = find_pos('AA')
-    endpos = find_pos('ZZ')
-
-    queue = [startpos]
-
-    while queue:
-        pos = queue.pop(0)
+    find_pos('AA')
